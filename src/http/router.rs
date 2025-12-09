@@ -1,4 +1,4 @@
-use crate::http::http_method::HttpMethod;
+use crate::http::http_shared::HttpMethod;
 use crate::http::request::Request;
 use crate::http::response::Response;
 use std::collections::HashMap;
@@ -20,12 +20,12 @@ pub(crate) struct RouterPath {
 }
 
 impl FromStr for RouterPath {
-    type Err = ();
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (http_method, resource) = s.split_once(" ").unwrap();
         Ok(RouterPath {
-            http_method: http_method.parse()?,
+            http_method: HttpMethod::from_str(http_method)?,
             resource_path: ResourcePath(resource.to_string()),
         })
     }
@@ -76,6 +76,12 @@ impl<'a> Router<'a> {
             return;
         };
 
-        chain.iter().for_each(|&handler| handler(req, res));
+        chain.iter().for_each(|&handler| {
+            if *res.is_finished() {
+                return;
+            }
+
+            handler(req, res)
+        });
     }
 }

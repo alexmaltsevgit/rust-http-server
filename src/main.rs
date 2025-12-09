@@ -22,7 +22,19 @@ fn main() {
     router.get(
         "/",
         &[&|req, res| {
-            println!("Принято ебать");
+            res.html(
+                "<!doctype html>
+<html>
+  <head>
+    <meta charset=\"utf-8\">
+    <title>This is the title of the webpage!</title>
+  </head>
+  <body>
+    <p>Серега здарова!</p>
+  </body>
+</html>"
+                    .into(),
+            )
         }],
     );
 
@@ -33,12 +45,12 @@ fn main() {
     });
 }
 
-fn handle_stream(router: &mut Router, mut stream: TcpStream) -> Result<(), ()> {
+fn handle_stream(router: &mut Router, mut stream: TcpStream) -> Result<(), anyhow::Error> {
     let buf_reader = BufReader::new(&stream);
 
     let mut lines = buf_reader.lines();
 
-    let request_status_line = lines.next().unwrap().unwrap();
+    let request_status_line = lines.next().unwrap()?;
     let (router_path, _) = request_status_line.trim().rsplit_once(" ").unwrap();
 
     let router_path: RouterPath = router_path.parse()?;
@@ -58,9 +70,22 @@ fn handle_stream(router: &mut Router, mut stream: TcpStream) -> Result<(), ()> {
 
     router.run_route_middleware_chain(&router_path, &req, &mut res);
 
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let status = res.status();
 
-    stream.write_all(response.as_bytes()).unwrap();
+    let status_line = format!("HTTP/1.1 {status}");
+
+    let http_headers = res
+        .headers()
+        .iter()
+        .fold(String::from(""), |acc, (key, value)| {
+            format!("{acc}{key}: {value}\r\n")
+        });
+
+    let http_body = res.body();
+
+    let response_text = format!("{status_line}\r\n{http_headers}\r\n{http_body}");
+
+    stream.write_all(response_text.as_bytes())?;
 
     Ok(())
 }
