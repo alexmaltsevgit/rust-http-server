@@ -1,6 +1,6 @@
 use crate::http::request::Request;
 use crate::http::response::Response;
-use crate::http::router::{Router, RouterPath};
+use crate::http::router::{Route, Router};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
@@ -53,7 +53,7 @@ fn handle_stream(router: &mut Router, mut stream: TcpStream) -> Result<(), anyho
     let request_status_line = lines.next().unwrap()?;
     let (router_path, _) = request_status_line.trim().rsplit_once(" ").unwrap();
 
-    let router_path: RouterPath = router_path.parse()?;
+    let router_path: Route = router_path.parse()?;
 
     let headers: HashMap<_, _> = HashMap::from_iter(
         lines

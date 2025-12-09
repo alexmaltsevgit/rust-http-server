@@ -1,6 +1,6 @@
 use strum_macros::{Display, EnumString};
 
-#[derive(Hash, PartialEq, Eq, Debug, EnumString)]
+#[derive(Hash, PartialEq, Eq, Debug, EnumString, Ord, PartialOrd, Display)]
 pub enum HttpMethod {
     #[strum(ascii_case_insensitive)]
     Get,
